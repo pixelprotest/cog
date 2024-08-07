@@ -21,7 +21,6 @@ from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from pydantic import ValidationError
-from pydantic.error_wrappers import ErrorWrapper
 
 from .. import schema
 from ..errors import PredictorNotSet
@@ -309,16 +308,12 @@ def create_app(  # pylint: disable=too-many-arguments,too-many-locals,too-many-s
         Run a single prediction on the model (idempotent creation).
         """
         if request.id is not None and request.id != prediction_id:
-            raise RequestValidationError(
-                [
-                    ErrorWrapper(
-                        ValueError(
-                            "prediction ID must match the ID supplied in the URL"
-                        ),
-                        ("body", "id"),
-                    )
-                ]
-            )
+            errors = [{
+                'loc': ('body', 'id'),
+                'msg': "prediction ID must match the ID supplied in the URL",
+                'type': 'value_error',
+            }]
+            raise ValidationError(errors, PredictionRequest)
 
         # We've already checked that the IDs match, now ensure that an ID is
         # set on the prediction object
